@@ -1,4 +1,4 @@
-Healthcare Risk Analytics Dashboard
+Healthcare Risk Analytics Dashboard | SQL, Python, Machine Learning, Power BI
 
 This project analyzes patient health data to identify heart disease risk factors using machine learning and interactive data visualization.
 
@@ -65,6 +65,7 @@ Healthcare Risk Insights & Decision Support
   Dashboard Preview
 
 ![Dashboard Preview](dashboard_preview.png)
+
 
 
 
