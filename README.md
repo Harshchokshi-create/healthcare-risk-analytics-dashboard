@@ -34,7 +34,20 @@ The Power BI dashboard provides insights such as:
 • Patient risk segmentation  
 • Gender based disease distribution  
 
+Key Insights from Data Analysis
+
+• Patients aged 50+ show a significantly higher probability of heart disease.
+
+• Individuals with higher cholesterol levels tend to have increased disease risk.
+
+• Certain chest pain types are strongly associated with positive heart disease diagnosis.
+
+• Blood pressure trends indicate that hypertensive patients fall into higher risk categories.
+
+• Male patients appear to have slightly higher disease occurrence compared to female patients.
+  
   Dashboard Preview
 
 ![Dashboard Preview](dashboard_preview.png)
+
 
