@@ -45,9 +45,26 @@ Key Insights from Data Analysis
 • Blood pressure trends indicate that hypertensive patients fall into higher risk categories.
 
 • Male patients appear to have slightly higher disease occurrence compared to female patients.
+ 
+ Project Architecture
+
+Raw Healthcare Dataset  
+        ↓  
+Data Extraction & Querying (SQL)  
+        ↓  
+Data Cleaning & Feature Preparation (Python – Pandas)  
+        ↓  
+Machine Learning Model (Logistic Regression)  
+        ↓  
+Model Evaluation (Accuracy, Precision, Recall, F1 Score)  
+        ↓  
+Business Intelligence Dashboard (Power BI)  
+        ↓  
+Healthcare Risk Insights & Decision Support
   
   Dashboard Preview
 
 ![Dashboard Preview](dashboard_preview.png)
+
 
 
