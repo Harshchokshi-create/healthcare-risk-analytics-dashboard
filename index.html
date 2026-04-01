@@ -272,6 +272,10 @@ async function startAnalysis(){
   };
 
   const meds = document.getElementById('f-meds').value;
+  document.getElementById('chat-messages').innerHTML = '<div class="msg-bot">Hi! I have completed your cardiovascular risk analysis. Ask me anything about your results in plain language.</div>';
+document.getElementById('report-body').innerHTML = '';
+currentRisk = {};
+currentData = {};
   showPage('page-loading');
   animateSteps();
 
