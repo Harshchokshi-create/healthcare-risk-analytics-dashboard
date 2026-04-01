@@ -406,7 +406,7 @@ function downloadReport(){
   a.click();
 }
 
-function goBack(){ showPage('page-form'); }
+function goBack(){    showPage('page-form');   document.getElementById('chat-messages').innerHTML = '<div class="msg-bot">Hi! I have completed your cardiovascular risk analysis. Ask me anything about your results in plain language.</div>';   document.getElementById('report-body').innerHTML = '';   currentRisk = {};   currentData = {}; }
 
 function toggleTech(){
   const c = document.getElementById('tech-content');
