@@ -271,6 +271,7 @@ let conversationHistory = "";
 let sessionId = "";
 let sessionMemory = '';
 let history = JSON.parse(localStorage.getItem("riskHistory") || "[]");
+let lastPatientData = null;
 
 function generateSessionId() {
   return Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9);
@@ -283,41 +284,33 @@ function showPage(id){
 
 async function callFlowise(question, isFirstCall = false, patientData = null){
   try{
-    // Generate new session ID for first call
     if(isFirstCall) {
       sessionId = generateSessionId();
       conversationHistory = "";
+      lastPatientData = patientData;
     }
     
-    let overrideConfig = {
-      sessionId: sessionId,
-      chat_history: conversationHistory || "None"
-    };
-    
-    // Only add patient data on first call
+    let inputText;
     if(isFirstCall && patientData){
-      overrideConfig.age = patientData.age.toString();
-      overrideConfig.bp = patientData.resting_bp.toString();
-      overrideConfig.cholesterol = patientData.serum_chol.toString();
-      overrideConfig.heart_rate = patientData.max_heart_rate.toString();
-      overrideConfig.risk_level = patientData.risk_level;
-      overrideConfig.risk_score = patientData.risk_score.toString();
-      overrideConfig.probability = patientData.probability || "75.0";
+      inputText = `Age: ${patientData.age}, BP: ${patientData.resting_bp}, Cholesterol: ${patientData.serum_chol}, Heart Rate: ${patientData.max_heart_rate}, Risk Level: ${patientData.risk_level}, Risk Score: ${patientData.risk_score}/10, Probability: ${patientData.probability}%`;
+    } else {
+      inputText = `Question: ${question}. Context: Patient has ${lastPatientData?.risk_level || 'MEDIUM'} risk level. Answer in 2-3 simple sentences only, no headers, no lists.`;
     }
     
     const res = await fetch(FLOWISE_API,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        question: question,
-        overrideConfig: overrideConfig
+        question: inputText,
+        overrideConfig: {
+          sessionId: sessionId
+        }
       })
     });
     
     const data = await res.json();
     const responseText = data.text || data.output || "No response";
     
-    // Save to conversation history for follow-ups
     conversationHistory += `Human: ${question}\nAssistant: ${responseText}\n`;
     
     return responseText;
@@ -409,7 +402,7 @@ async function startAnalysis(){
 
     showPage('page-results');
 
-    // 🤖 Flowise report with FULL patient data and memory
+    // 🤖 Flowise report with FULL patient data
     const patientDataForAI = {
       age: age,
       resting_bp: bp,
@@ -421,8 +414,8 @@ async function startAnalysis(){
     };
 
     const report = await callFlowise(
-      "Generate cardiovascular risk assessment report", 
-      true,  // isFirstCall = true - generates new session
+      "Generate report", 
+      true,
       patientDataForAI
     );
 
@@ -471,6 +464,7 @@ function goBack(){
   conversationHistory = "";
   sessionId = "";
   sessionMemory = "";
+  lastPatientData = null;
   
   // Clear chat messages and reset to initial state
   const chatBox = document.getElementById('chat-messages');
