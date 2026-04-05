@@ -264,12 +264,6 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--muted);border-t
 
 <script>
 const FLASK_API = "https://vitalai-zc9m.onrender.com";
-const FLOWISE_API = "https://cloud.flowiseai.com/api/v1/prediction/4b214a6b-0439-4925-a91b-36f2b6cc7a6b";
-
-let currentRisk = {};
-let currentData = {};
-let agentReport = '';
-let sessionMemory = ''; // IDEA 3: Store full report for memory
 
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -277,270 +271,61 @@ function showPage(id){
   window.scrollTo(0,0);
 }
 
-function animateProgress(){
-  const bar = document.getElementById('progress-bar');
-  const text = document.getElementById('progress-text');
-  const msgs = ['Running ML models on patient data...','Analyzing cardiovascular indicators...','Generating health recommendations...','Compiling your medical report...'];
-  let i=0;
-  setTimeout(()=>{bar.style.width='25%';text.textContent=msgs[0];},100);
-  setTimeout(()=>{bar.style.width='50%';text.textContent=msgs[1];},1800);
-  setTimeout(()=>{bar.style.width='75%';text.textContent=msgs[2];},3600);
-  setTimeout(()=>{bar.style.width='95%';text.textContent=msgs[3];},5400);
-}
-
-async function callFlowise(question){
-  const response = await fetch(FLOWISE_API,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({question:question})
-  });
-  const result = await response.json();
-  return result.text||result.output||result.answer||JSON.stringify(result);
-}
-
 async function startAnalysis(){
   const age=document.getElementById('f-age').value;
   const bp=document.getElementById('f-bp').value;
   const chol=document.getElementById('f-chol').value;
   const hr=document.getElementById('f-hr').value;
-  if(!age||!bp||!chol||!hr){alert('Please fill in Age, Blood Pressure, Cholesterol and Heart Rate.');return;}
 
-  currentData={
-    age:parseInt(age),gender:parseInt(document.getElementById('f-gender').value),
-    chest_pain_type:parseInt(document.getElementById('f-cp').value),
-    resting_bp:parseInt(bp),serum_chol:parseInt(chol),
-    fasting_blood_sugar:parseInt(document.getElementById('f-bs').value),
-    resting_ecg:parseInt(document.getElementById('f-ecg').value),
-    max_heart_rate:parseInt(hr),exercise_angina:parseInt(document.getElementById('f-ea').value),
-    oldpeak:parseFloat(document.getElementById('f-op').value)||0,
-    slope:parseInt(document.getElementById('f-slope').value),
-    major_vessels:parseInt(document.getElementById('f-mv').value)
+  if(!age||!bp||!chol||!hr){
+    alert('Please fill required fields');
+    return;
+  }
+
+  const data={
+    age:parseInt(age),
+    resting_bp:parseInt(bp),
+    serum_chol:parseInt(chol),
+    max_heart_rate:parseInt(hr)
   };
 
-  const meds=document.getElementById('f-meds').value;
-
-  // Reset everything for new analysis
-  currentRisk={};
-  agentReport='';
-  sessionMemory='';
-  document.getElementById('chat-messages').innerHTML='<div class="msg-bot">Hi! I have completed your cardiovascular risk analysis. Ask me anything about your results in plain language.</div>';
-  document.getElementById('report-body').innerHTML='<div class="generating-indicator"><div class="gen-dot"></div><div class="gen-dot"></div><div class="gen-dot"></div><span>AI agents are generating your report...</span></div>';
-  document.getElementById('patient-summary').innerHTML='<div class="generating-indicator"><div class="gen-dot"></div><div class="gen-dot"></div><div class="gen-dot"></div><span>Preparing patient-friendly summary...</span></div>';
-  document.getElementById('btn-patient').className='view-btn active';
-  document.getElementById('btn-clinical').className='view-btn';
-  document.getElementById('patient-view').style.display='block';
-  document.getElementById('clinical-view').style.display='none';
-  document.getElementById('progress-bar').style.width='0%';
-
   showPage('page-loading');
-  animateProgress();
 
-  let mlResult;
-  try{
-    const res=await fetch(FLASK_API+'/predict',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','ngrok-skip-browser-warning':'true'},
-      body:JSON.stringify(currentData)
-    });
-    mlResult=await res.json();
-  }catch(e){
-    mlResult=fallback(currentData);
-  }
-  currentRisk=mlResult;
+  let riskScore = 0;
 
-  const patientSummary=`
-Patient Data:
-- Age: ${age}, Gender: ${parseInt(document.getElementById('f-gender').value)===1?'Male':'Female'}
-- Blood Pressure: ${bp} mmHg
-- Cholesterol: ${chol} mg/dL
-- Chest Pain Type: ${document.getElementById('f-cp').options[document.getElementById('f-cp').selectedIndex].text}
-- Max Heart Rate: ${hr} bpm
-- Exercise Angina: ${document.getElementById('f-ea').value==='1'?'Yes':'No'}
-- Fasting Blood Sugar: ${document.getElementById('f-bs').value==='1'?'High':'Normal'}
-- Oldpeak: ${document.getElementById('f-op').value||0}
-- Medications: ${meds||'None'}
+  if(data.serum_chol > 240) riskScore += 3;
+  else if(data.serum_chol > 200) riskScore += 2;
 
-Real ML Model Results:
-- Logistic Regression Probability: ${mlResult.lr_probability}
-- Random Forest Probability: ${mlResult.rf_probability}
-- Average ML Probability: ${mlResult.avg_probability}
-- ML Risk Classification: ${mlResult.risk_level}
-- Risk Score: ${mlResult.risk_score}/10
+  if(data.resting_bp > 140) riskScore += 3;
+  else if(data.resting_bp > 120) riskScore += 2;
 
-Please analyze this patient's cardiovascular risk based on the REAL ML model predictions above.
-  `.trim();
+  if(data.age > 55) riskScore += 2;
 
-  setTimeout(async()=>{
-    buildRiskBanner(mlResult,currentData);
-    buildSummaryCard(mlResult,currentData); // IDEA 2
+  if(data.max_heart_rate < 120) riskScore += 2;
+
+  let level = "LOW";
+  if(riskScore >= 7) level = "HIGH";
+  else if(riskScore >= 4) level = "MEDIUM";
+
+  const score = (riskScore).toFixed(1);
+
+  setTimeout(()=>{
+    document.getElementById('r-level').textContent = level;
+    document.getElementById('r-score').textContent = score;
+
+    document.getElementById('s-risk').textContent = level + " ("+score+"/10)";
+    document.getElementById('s-concern').textContent = "Cholesterol & BP";
+    document.getElementById('s-action').textContent =
+      level==="HIGH" ? "Consult doctor immediately" :
+      level==="MEDIUM" ? "Lifestyle changes needed" :
+      "Maintain lifestyle";
+
     showPage('page-results');
-    try{
-      const report=await callFlowise(patientSummary);
-      agentReport=report;
-      sessionMemory=report; // IDEA 3: Store in memory
-      document.getElementById('report-body').textContent=report;
-      buildPatientView(mlResult,currentData,report); // IDEA 4
-    }catch(e){
-      document.getElementById('report-body').textContent='Could not connect to AI agents. Please check Flowise is running and try again.';
-    }
-  },6500);
-}
-
-function fallback(d){   let score = 0;    // Cholesterol   if(d.serum_chol > 240) score += 3;   else if(d.serum_chol > 200) score += 2;    // Blood Pressure   if(d.resting_bp > 140) score += 3;   else if(d.resting_bp >= 130) score += 2;    // Age   if(d.age > 55) score += 2;   else if(d.age > 45) score += 1;    // Heart Rate   if(d.max_heart_rate < 120) score += 1;    // Angina   if(d.exercise_angina === 1) score += 2;    // Final probability (scaled properly)   let avg = Math.min(score / 10, 0.95);    return {     lr_probability: avg.toFixed(2),     rf_probability: avg.toFixed(2),     avg_probability: avg.toFixed(2),     risk_level: avg >= 0.7 ? 'HIGH' : avg >= 0.4 ? 'MEDIUM' : 'LOW',     risk_score: (avg * 10).toFixed(1)   }; }   let score = 0;    // Cholesterol   if(d.serum_chol > 240) score += 3;   else if(d.serum_chol > 200) score += 2;    // Blood Pressure   if(d.resting_bp > 140) score += 3;   else if(d.resting_bp >= 130) score += 2;    // Age   if(d.age > 55) score += 2;   else if(d.age > 45) score += 1;    // Heart Rate   if(d.max_heart_rate < 120) score += 1;    // Angina   if(d.exercise_angina === 1) score += 2;    // Final probability (scaled properly)   let avg = Math.min(score / 10, 0.95);    return {     lr_probability: avg.toFixed(2),     rf_probability: avg.toFixed(2),     avg_probability: avg.toFixed(2),     risk_level: avg >= 0.7 ? 'HIGH' : avg >= 0.4 ? 'MEDIUM' : 'LOW',     risk_score: (avg * 10).toFixed(1)   }; }
-  let s=0;
-  if(d.serum_chol>280)s+=3;else if(d.serum_chol>240)s+=2;else if(d.serum_chol>200)s+=1;
-  if(d.resting_bp>160)s+=3;else if(d.resting_bp>140)s+=2;else if(d.resting_bp>120)s+=1;
-  if(d.age>60)s+=2;else if(d.age>45)s+=1;
-  if(d.chest_pain_type===0)s+=2;if(d.exercise_angina===1)s+=1;if(d.fasting_blood_sugar===1)s+=1;
-  const p=Math.min(s/10,0.97);
-  const lr=parseFloat((p+(Math.random()*0.04-0.02)).toFixed(2));
-  const rf=parseFloat((p+(Math.random()*0.04-0.02)).toFixed(2));
-  const avg=parseFloat(((lr+rf)/2).toFixed(2));
-  return{lr_probability:lr,rf_probability:rf,avg_probability:avg,risk_level:avg>=0.65?'HIGH':avg>=0.35?'MEDIUM':'LOW',risk_score:parseFloat((avg*10).toFixed(1))};
-}
-
-// 🔥 HYBRID RISK OVERRIDE LOGIC let riskPoints = 0;  if (d.serum_chol > 300) riskPoints += 3; else if (d.serum_chol > 240) riskPoints += 2; else if (d.serum_chol > 200) riskPoints += 1;  if (d.resting_bp > 160) riskPoints += 3; else if (d.resting_bp > 140) riskPoints += 2; else if (d.resting_bp > 120) riskPoints += 1;  if (d.age > 60) riskPoints += 2; else if (d.age > 50) riskPoints += 1;  if (d.exercise_angina === 1) riskPoints += 2; if (d.fasting_blood_sugar === 1) riskPoints += 1; if (d.oldpeak > 2) riskPoints += 2;  // Override ML if rule-based risk is higher if (riskPoints >= 7) {   r.risk_level = 'HIGH';   r.risk_score = 8 + Math.random()*2; } else if (riskPoints >= 4) {   r.risk_level = 'MEDIUM';   r.risk_score = 4 + Math.random()*2; } else {   r.risk_level = 'LOW'; }
-  const lvl=r.risk_level;
-  document.getElementById('risk-banner').className='risk-banner '+lvl.toLowerCase();
-  const el=document.getElementById('r-level');
-  el.textContent=lvl;el.className='risk-level '+lvl.toLowerCase();
-  document.getElementById('r-score').textContent=r.risk_score;
-  setTimeout(()=>{document.getElementById('r-gauge').style.width=Math.round(r.avg_probability*100)+'%';},100);
-  document.getElementById('t-lr').textContent=r.lr_probability;
-  document.getElementById('t-rf').textContent=r.rf_probability;
-  const meds=document.getElementById('f-meds').value;
-  const concerns=[];
-  if(d.serum_chol>240)concerns.push({t:`Cholesterol at ${d.serum_chol} mg/dL is significantly above the safe limit of 200`,c:'#ff6b6b'});
-  else if(d.serum_chol>200)concerns.push({t:`Cholesterol at ${d.serum_chol} mg/dL is borderline high`,c:'#ffd93d'});
-  else concerns.push({t:`Cholesterol at ${d.serum_chol} mg/dL is within acceptable range`,c:'#00d4a4'});
-  if(d.resting_bp>140)concerns.push({t:`Blood pressure at ${d.resting_bp} mmHg is in Stage 2 hypertension range`,c:'#ff6b6b'});
-  else if(d.resting_bp>120)concerns.push({t:`Blood pressure at ${d.resting_bp} mmHg is slightly elevated`,c:'#ffd93d'});
-  else concerns.push({t:`Blood pressure at ${d.resting_bp} mmHg is normal`,c:'#00d4a4'});
-  if(d.age>55)concerns.push({t:`Age ${d.age} places this patient in a higher baseline cardiovascular risk group`,c:'#ffd93d'});
-  if(meds)concerns.push({t:`Medications noted: ${meds} — drug interaction check included in report`,c:'#6c63ff'});
-  document.getElementById('concerns-list').innerHTML=concerns.map(c=>`<li class="concern-item"><div class="concern-dot" style="background:${c.c}"></div>${c.t}</li>`).join('');
-}
-
-// IDEA 2: Build Risk Summary Card
-function buildSummaryCard(r,d){
-  const lvl=r.risk_level;
-  let concern='';
-  let action='';
-  if(d.serum_chol>240){concern=`Cholesterol: ${d.serum_chol} mg/dL`;}
-  else if(d.resting_bp>140){concern=`Blood pressure: ${d.resting_bp} mmHg`;}
-  else{concern=`Age risk factor: ${d.age} years`;}
-  if(lvl==='HIGH'){action='See cardiologist within 48 hours';}
-  else if(lvl==='MEDIUM'){action='Schedule checkup within 2 weeks';}
-  else{action='Continue healthy lifestyle';}
-  document.getElementById('s-risk').textContent=lvl+' ('+r.risk_score+'/10)';
-  document.getElementById('s-concern').textContent=concern;
-  document.getElementById('s-action').textContent=action;
-}
-
-// IDEA 4: Build Patient-Friendly View
-function buildPatientView(r,d,report){
-  const lvl=r.risk_level;
-  const score=r.risk_score;
-  let intro='';
-  let advice='';
-  let urgency='';
-  if(lvl==='HIGH'){
-    intro=`Your cardiovascular risk is <strong>HIGH</strong> with a score of ${score}/10. This means our AI system detected several concerning health indicators that need prompt attention.`;
-    advice=`Your cholesterol and blood pressure are the main areas of concern. Reducing fatty foods, increasing physical activity, and taking prescribed medications can help improve your numbers.`;
-    urgency=`Please see a cardiologist or your doctor <strong>within the next 48 hours</strong>. Do not ignore these results.`;
-  }else if(lvl==='MEDIUM'){
-    intro=`Your cardiovascular risk is <strong>MEDIUM</strong> with a score of ${score}/10. Some health indicators need attention but this is manageable with the right steps.`;
-    advice=`Focus on improving your diet and increasing physical activity. Reducing sodium intake and managing stress can significantly help your heart health.`;
-    urgency=`Schedule an appointment with your doctor <strong>within the next 2 weeks</strong> to discuss your results.`;
-  }else{
-    intro=`Your cardiovascular risk is <strong>LOW</strong> with a score of ${score}/10. Your health indicators are in a good range.`;
-    advice=`Keep maintaining your healthy lifestyle. Regular exercise, balanced diet, and avoiding smoking will help you stay in this low risk category.`;
-    urgency=`A routine health checkup every <strong>6-12 months</strong> is recommended to monitor your heart health.`;
-  }
-  document.getElementById('patient-summary').innerHTML=`
-    <div class="patient-summary">
-      <p>${intro}</p>
-      <p>${advice}</p>
-      <p>${urgency}</p>
-      <p style="font-size:12px;color:var(--muted);margin-top:8px;">For the complete clinical report, click "Clinical View" above. For full details, click "Download Report".</p>
-    </div>`;
-}
-
-// IDEA 4: Switch between views
-function switchView(view){
-  if(view==='patient'){
-    document.getElementById('patient-view').style.display='block';
-    document.getElementById('clinical-view').style.display='none';
-    document.getElementById('btn-patient').className='view-btn active';
-    document.getElementById('btn-clinical').className='view-btn';
-  }else{
-    document.getElementById('patient-view').style.display='none';
-    document.getElementById('clinical-view').style.display='block';
-    document.getElementById('btn-patient').className='view-btn';
-    document.getElementById('btn-clinical').className='view-btn active';
-  }
-}
-
-// IDEA 3: sendChat with memory
-async function sendChat(){
-  const inp=document.getElementById('chat-inp');
-  const msg=inp.value.trim();
-  if(!msg)return;
-  const btn=document.getElementById('chat-send-btn');
-  const msgs=document.getElementById('chat-messages');
-  msgs.innerHTML+=`<div class="msg-user">${msg}</div>`;
-  msgs.innerHTML+=`<div class="msg-typing" id="typing"><div class="gen-dot"></div><div class="gen-dot"></div><div class="gen-dot"></div></div>`;
-  inp.value='';
-  btn.disabled=true;
-  msgs.scrollTop=msgs.scrollHeight;
-
-  // IDEA 3: Include actual report in context so agents genuinely remember
-  const contextWithMemory=`FOLLOW_UP_QUESTION: ${msg}
-
-Previous VitalAI report for this patient:
-${sessionMemory ? sessionMemory.substring(0,500) : 'No report available yet.'}
-
-Answer the follow-up question in 2-3 conversational sentences based on the report above. Do NOT generate a new full report.`;
-
-  try{
-    const response=await callFlowise(contextWithMemory);
-    document.getElementById('typing')?.remove();
-    // Clean response — remove any FOLLOW_UP_QUESTION prefix if it leaks through
-    const cleanResponse=response.replace(/^FOLLOW_UP_QUESTION:\s*/i,'').trim();
-    msgs.innerHTML+=`<div class="msg-bot">${cleanResponse}</div>`;
-  }catch(e){
-    document.getElementById('typing')?.remove();
-    msgs.innerHTML+=`<div class="msg-bot">I am having trouble connecting right now. Please try again in a moment.</div>`;
-  }
-  btn.disabled=false;
-  msgs.scrollTop=msgs.scrollHeight;
-}
-
-function downloadReport(){
-  const clinical=document.getElementById('report-body').textContent;
-  const patient=document.getElementById('patient-summary').innerText;
-  const text=`VITALAI MEDICAL REPORT\n\nPATIENT SUMMARY\n${patient}\n\nFULL CLINICAL REPORT\n${clinical}`;
-  const blob=new Blob([text],{type:'text/plain'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='VitalAI_Medical_Report.txt';
-  a.click();
+  },1000);
 }
 
 function goBack(){
   showPage('page-form');
-  currentRisk={};currentData={};agentReport='';sessionMemory='';
-  document.getElementById('chat-messages').innerHTML='<div class="msg-bot">Hi! Ask me anything about your results in plain language.</div>';
-  document.getElementById('report-body').innerHTML='';
-  document.getElementById('patient-summary').innerHTML='';
-  document.getElementById('progress-bar').style.width='0%';
-}
-
-function toggleTech(){
-  const c=document.getElementById('tech-content');
-  const a=document.getElementById('tech-arrow');
-  if(c.style.display==='block'){c.style.display='none';a.textContent='▼ Show';}
-  else{c.style.display='block';a.textContent='▲ Hide';}
 }
 </script>
 </body>
