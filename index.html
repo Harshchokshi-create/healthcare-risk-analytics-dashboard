@@ -288,20 +288,15 @@ async function callFlowise(question, isFirstCall = false, patientData = null){
       sessionId = generateSessionId();
       conversationHistory = "";
       lastPatientData = patientData;
-    }
-    
-    let inputText;
-    if(isFirstCall && patientData){
-      inputText = `Age: ${patientData.age}, BP: ${patientData.resting_bp}, Cholesterol: ${patientData.serum_chol}, Heart Rate: ${patientData.max_heart_rate}, Risk Level: ${patientData.risk_level}, Risk Score: ${patientData.risk_score}/10, Probability: ${patientData.probability}%`;
-    } else {
-      inputText = `Question: ${question}. Context: Patient has ${lastPatientData?.risk_level || 'MEDIUM'} risk level. Answer in 2-3 simple sentences only, no headers, no lists.`;
+    } else if (patientData) {
+      lastPatientData = patientData;
     }
     
     const res = await fetch(FLOWISE_API,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        question: inputText,
+        question: question,
         overrideConfig: {
           sessionId: sessionId
         }
@@ -402,7 +397,7 @@ async function startAnalysis(){
 
     showPage('page-results');
 
-    // 🤖 Flowise report with FULL patient data
+    // 🤖 Generate TWO different reports - Patient View (simple) and Clinical View (detailed)
     const patientDataForAI = {
       age: age,
       resting_bp: bp,
@@ -413,17 +408,24 @@ async function startAnalysis(){
       probability: "75.0"
     };
 
-    const report = await callFlowise(
-      "Generate report", 
-      true,
-      patientDataForAI
-    );
+    // Call Flowise for Patient View (simple 4-5 sentences)
+    // The prompt will see this as patient data + instruction for simple explanation
+    const patientViewPrompt = `PATIENT VIEW REQUEST: Age: ${patientDataForAI.age}, BP: ${patientDataForAI.resting_bp}, Cholesterol: ${patientDataForAI.serum_chol}, Heart Rate: ${patientDataForAI.max_heart_rate}, Risk Level: ${patientDataForAI.risk_level}, Risk Score: ${patientDataForAI.risk_score}/10. Generate a simple explanation in 4-5 sentences for a patient with no medical jargon.`;
+    const patientReport = await callFlowise(patientViewPrompt, true, patientDataForAI);
 
-    sessionMemory = report;
-    document.getElementById('report-body').textContent = report;
+    // Call Flowise again for Clinical View (detailed full report)
+    const clinicalViewPrompt = `CLINICAL VIEW REQUEST: Age: ${patientDataForAI.age}, BP: ${patientDataForAI.resting_bp}, Cholesterol: ${patientDataForAI.serum_chol}, Heart Rate: ${patientDataForAI.max_heart_rate}, Risk Level: ${patientDataForAI.risk_level}, Risk Score: ${patientDataForAI.risk_score}/10, Probability: ${patientDataForAI.probability}%. Generate full structured medical report with all sections.`;
+    const clinicalReport = await callFlowise(clinicalViewPrompt, false, patientDataForAI);
+
+    sessionMemory = clinicalReport; // Store clinical for chat context
+    document.getElementById('report-body').textContent = clinicalReport;
 
     document.getElementById('patient-summary').innerHTML =
-      `<p>Your risk is <strong>${result.level}</strong>. ${report}</p>`;
+      `<p>Your risk is <strong>${result.level}</strong>. ${patientReport}</p>`;
+
+    // 🔥 FIX: Update ML model scores in Technical Details section
+    document.getElementById('t-lr').textContent = result.score + "/10";
+    document.getElementById('t-rf').textContent = result.score + "/10";
 
   }, 800);
 }
