@@ -386,7 +386,7 @@ Please analyze this patient's cardiovascular risk based on the REAL ML model pre
   },6500);
 }
 
-function fallback(d){
+function fallback(d){   let score = 0;    // Cholesterol   if(d.serum_chol > 240) score += 3;   else if(d.serum_chol > 200) score += 2;    // Blood Pressure   if(d.resting_bp > 140) score += 3;   else if(d.resting_bp >= 130) score += 2;    // Age   if(d.age > 55) score += 2;   else if(d.age > 45) score += 1;    // Heart Rate   if(d.max_heart_rate < 120) score += 1;    // Angina   if(d.exercise_angina === 1) score += 2;    // Final probability (scaled properly)   let avg = Math.min(score / 10, 0.95);    return {     lr_probability: avg.toFixed(2),     rf_probability: avg.toFixed(2),     avg_probability: avg.toFixed(2),     risk_level: avg >= 0.7 ? 'HIGH' : avg >= 0.4 ? 'MEDIUM' : 'LOW',     risk_score: (avg * 10).toFixed(1)   }; }   let score = 0;    // Cholesterol   if(d.serum_chol > 240) score += 3;   else if(d.serum_chol > 200) score += 2;    // Blood Pressure   if(d.resting_bp > 140) score += 3;   else if(d.resting_bp >= 130) score += 2;    // Age   if(d.age > 55) score += 2;   else if(d.age > 45) score += 1;    // Heart Rate   if(d.max_heart_rate < 120) score += 1;    // Angina   if(d.exercise_angina === 1) score += 2;    // Final probability (scaled properly)   let avg = Math.min(score / 10, 0.95);    return {     lr_probability: avg.toFixed(2),     rf_probability: avg.toFixed(2),     avg_probability: avg.toFixed(2),     risk_level: avg >= 0.7 ? 'HIGH' : avg >= 0.4 ? 'MEDIUM' : 'LOW',     risk_score: (avg * 10).toFixed(1)   }; }
   let s=0;
   if(d.serum_chol>280)s+=3;else if(d.serum_chol>240)s+=2;else if(d.serum_chol>200)s+=1;
   if(d.resting_bp>160)s+=3;else if(d.resting_bp>140)s+=2;else if(d.resting_bp>120)s+=1;
