@@ -264,6 +264,9 @@ footer{text-align:center;padding:24px;font-size:12px;color:var(--muted);border-t
 
 <script>
 const FLASK_API = "https://vitalai-zc9m.onrender.com";
+const FLOWISE_API = "https://cloud.flowiseai.com/api/v1/prediction/4b214a6b-0439-4925-a91b-36f2b6cc7a6b";
+
+let sessionMemory = '';
 
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -271,7 +274,24 @@ function showPage(id){
   window.scrollTo(0,0);
 }
 
+// ✅ CALL FLOWISE
+async function callFlowise(question){
+  try{
+    const res = await fetch(FLOWISE_API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question})
+    });
+    const data = await res.json();
+    return data.text || data.output || "No response from AI";
+  }catch(e){
+    return "AI agent is currently unavailable.";
+  }
+}
+
+// ✅ MAIN ANALYSIS
 async function startAnalysis(){
+
   const age=document.getElementById('f-age').value;
   const bp=document.getElementById('f-bp').value;
   const chol=document.getElementById('f-chol').value;
@@ -291,6 +311,7 @@ async function startAnalysis(){
 
   showPage('page-loading');
 
+  // ✅ HYBRID RISK LOGIC (FIXED)
   let riskScore = 0;
 
   if(data.serum_chol > 240) riskScore += 3;
@@ -307,8 +328,9 @@ async function startAnalysis(){
   if(riskScore >= 7) level = "HIGH";
   else if(riskScore >= 4) level = "MEDIUM";
 
-  const score = (riskScore).toFixed(1);
+  const score = riskScore.toFixed(1);
 
+  // ⚡ SHOW RESULT FAST (NO WAIT)
   setTimeout(()=>{
     document.getElementById('r-level').textContent = level;
     document.getElementById('r-score').textContent = score;
@@ -322,6 +344,53 @@ async function startAnalysis(){
 
     showPage('page-results');
   },1000);
+
+  // 🤖 FLOWISE RUNS IN BACKGROUND (IMPORTANT)
+  const prompt = `
+Patient Data:
+Age: ${age}
+Blood Pressure: ${bp}
+Cholesterol: ${chol}
+Heart Rate: ${hr}
+
+Risk Level: ${level}
+
+Give a medical style report with risks, actions, and lifestyle advice.
+`;
+
+  const report = await callFlowise(prompt);
+  sessionMemory = report;
+
+  document.getElementById('report-body').textContent = report;
+  document.getElementById('patient-summary').innerHTML = `
+    <p><strong>${level}</strong> risk detected.</p>
+    <p>${report.substring(0,200)}...</p>
+  `;
+}
+
+// ✅ CHAT WITH MEMORY
+async function sendChat(){
+  const inp=document.getElementById('chat-inp');
+  const msg=inp.value.trim();
+  if(!msg)return;
+
+  const msgs=document.getElementById('chat-messages');
+
+  msgs.innerHTML+=`<div class="msg-user">${msg}</div>`;
+  inp.value='';
+
+  const context = `
+Previous Report:
+${sessionMemory}
+
+User Question: ${msg}
+Answer briefly.
+`;
+
+  const reply = await callFlowise(context);
+
+  msgs.innerHTML+=`<div class="msg-bot">${reply}</div>`;
+  msgs.scrollTop = msgs.scrollHeight;
 }
 
 function goBack(){
