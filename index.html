@@ -399,7 +399,7 @@ function fallback(d){   let score = 0;    // Cholesterol   if(d.serum_chol > 240
   return{lr_probability:lr,rf_probability:rf,avg_probability:avg,risk_level:avg>=0.65?'HIGH':avg>=0.35?'MEDIUM':'LOW',risk_score:parseFloat((avg*10).toFixed(1))};
 }
 
-function buildRiskBanner(r,d){
+// 🔥 HYBRID RISK OVERRIDE LOGIC let riskPoints = 0;  if (d.serum_chol > 300) riskPoints += 3; else if (d.serum_chol > 240) riskPoints += 2; else if (d.serum_chol > 200) riskPoints += 1;  if (d.resting_bp > 160) riskPoints += 3; else if (d.resting_bp > 140) riskPoints += 2; else if (d.resting_bp > 120) riskPoints += 1;  if (d.age > 60) riskPoints += 2; else if (d.age > 50) riskPoints += 1;  if (d.exercise_angina === 1) riskPoints += 2; if (d.fasting_blood_sugar === 1) riskPoints += 1; if (d.oldpeak > 2) riskPoints += 2;  // Override ML if rule-based risk is higher if (riskPoints >= 7) {   r.risk_level = 'HIGH';   r.risk_score = 8 + Math.random()*2; } else if (riskPoints >= 4) {   r.risk_level = 'MEDIUM';   r.risk_score = 4 + Math.random()*2; } else {   r.risk_level = 'LOW'; }
   const lvl=r.risk_level;
   document.getElementById('risk-banner').className='risk-banner '+lvl.toLowerCase();
   const el=document.getElementById('r-level');
