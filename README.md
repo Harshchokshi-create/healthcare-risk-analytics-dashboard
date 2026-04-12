@@ -1,12 +1,12 @@
  VitalAI — Healthcare Risk Analytics & Multi-Agent AI Decision Support System
 
-> A comprehensive end-to-end AI/ML project that combines real machine learning models with a multi-agent AI pipeline to analyze cardiovascular risk and provide actionable medical recommendations.
+> A comprehensive end-to-end AI/ML project that combines real machine learning models with an AI agent pipeline to analyze cardiovascular risk and provide actionable medical recommendations.
 
 ---
 
 Project Overview
 
-VitalAI is a **multi-agent cardiovascular risk analysis system** built as part of the Microsoft Elevate Program internship capstone project. It goes beyond traditional data analytics by integrating real trained ML models with a 3-agent AI pipeline that interprets predictions, generates recommendations, and produces structured medical reports — all accessible through a professional web interface.
+VitalAI is a ** cardiovascular risk analysis system** built as part of the Microsoft Elevate Program internship capstone project. It goes beyond traditional data analytics by integrating real trained ML models with a 3-agent AI pipeline that interprets predictions, generates recommendations, and produces structured medical reports — all accessible through a professional web interface.
 
 Problem Statement
 
@@ -20,7 +20,7 @@ Solution
 VitalAI solves this by creating a complete pipeline:
 
 ```
-Patient Data → Real ML Models → 3 AI Agents → Medical Report + Recommendations
+Patient Data → Real ML Models → AI Agents → Medical Report + Recommendations
 ```
 
 ---
@@ -31,7 +31,7 @@ Tech Stack
 |---|---|
 | Data Analysis | Python, Pandas, SQL |
 | Machine Learning | Scikit-learn (Logistic Regression + Random Forest) |
-| AI Agents | Flowise (3-agent pipeline) |
+| AI Agents | Flowise |
 | LLM | Groq API (LLaMA 3.3 70B) |
 | Backend API | Flask (Python) |
 | Frontend | HTML, CSS, JavaScript |
@@ -122,17 +122,17 @@ Both models are trained, saved as `.pkl` files and served via Flask API for real
 
 AI Agent Pipeline
 
- Agent 1 — Risk Analyzer
+  1 — Risk Analyzer
 - Role: Receives real ML model predictions + patient data
 - Input: Patient details + Logistic Regression probability + Random Forest probability
 - Output:Risk classification (HIGH/MEDIUM/LOW) + Risk score + Detailed analysis of concerning values
 
- Agent 2 — Health Advisor
+ 2 — Health Advisor
 - Role:Receives Agent 1's risk analysis
 - Input:Agent 1 output (cannot run without Agent 1)
 - Output: Preventive actions + Lifestyle recommendations + Drug interaction warnings + When to see a doctor
 
- Agent 3 — Report Generator
+  3 — Report Generator
 - Role: Receives Agent 2's recommendations
 - Input:Full Agent 2 output (cannot run without Agent 2)
 - Output: Structured VitalAI Medical Report with all sections compiled
@@ -156,7 +156,7 @@ VitalAI/
 ├── app.py                               # Flask API (serves ML models)
 ├── requirements.txt                     # Python dependencies
 ├── index.html                           # VitalAI web frontend
-├── VitalAI Chatflow.json               # Flowise 3-agent configuration
+├── VitalAI Chatflow.json               # Flowise agent configuration
 ├── healthcare_dashboard.pbix            # Power BI dashboard
 ├── dashboard_preview.png               # Dashboard screenshot
 └── README.md                           # This file
@@ -194,7 +194,7 @@ Open `index.html` in browser. Update the API URL if needed.
 Features
 
 - **Real ML predictions** — Logistic Regression + Random Forest both run on every submission
-- **3 dependent AI agents** — each agent builds on the previous one's output
+- ** dependent AI agent — each agent builds on the previous one's output
 - **Natural language input** — doctors enter patient data in plain language
 - **Structured medical report** — professionally formatted, downloadable as text
 - **Drug interaction warning** — detects cardiovascular medication conflicts
